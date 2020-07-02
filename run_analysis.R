@@ -47,8 +47,12 @@ mergedData <- mergedData[, grepl("mean\\(\\)|std\\(\\)|ActivityID|SubjectID",   
 mergedData$ActivityID <- acNames[mergedData$ActivityID, 2]                      #Indexes the activity id's dataset with the activity id from the test/train data
 
 # Find the average of each variable for each activity and each subject (Assignment Item 5)
-avgData <- tapply(mergedData$`tBodyAcc-mean()-X`, list(mergedData$ActivityID, 
-    mergedData$SubjectID), FUN=mean)
+avgData <- tapply(mergedData$`tBodyAcc-mean()-X`, list(mergedData$ActivityID,   #Use tapply to get the mean of each combination of activity and subject
+    mergedData$SubjectID), FUN=mean)                                    
+avgData <- as.data.frame(t(avgData))                                            #Convert to a data frame
+avgData$SubjectID <- rownames(avgData)                                          #Make the activity id a column
+avgData <- select(avgData, SubjectID, as.character(unique(mergedData$ActivityID)))   #Rearrange the columns
+print(avgData)
 
 
 
