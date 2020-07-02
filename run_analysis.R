@@ -18,6 +18,7 @@ trainSubject <- read.table(trainSuFile)
 featuresFile <- "./UCI HAR Dataset/features.txt"                                #File of channel/feature names
 colNames <- read.table(featuresFile)
 colNames <- colNames[,2]                                                        #First column is just a numeric index = 1:nrow(colNames)
+colNames <- sub("BodyBody", "Body", colNames)                                   #Replace any variable names that repeat "Body" twice
 
 # Import Activity Labels
 activitiesFile <- "./UCI HAR Dataset/activity_labels.txt"                       #File of activity names
