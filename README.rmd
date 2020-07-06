@@ -1,6 +1,6 @@
 ---
 title: "README"
-author: "Bernard Duplan"
+author: "Bernie"
 date: "7/6/2020"
 output: html_document
 ---
@@ -9,142 +9,31 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Import Test Data
-First, check to see if the data exists on the local machine.  If it does not, 
-import and unzip it.
-```{r Import}
-fileLoc <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
-dest <- "UCA HAR Dataset.zip"
-if(!file.exists(dest)) {
-    download.file(fileLoc, dest)
-    unzip(dest)
-}
-```
+##GettingCleaningDataCourseProject Repository ReadMe
+assignment.
 
-### Assign Datasets to Variables
-Data were taken in two phases, the training and testing phases, each contained
-within a respective subfolder within the data directory.  Furthermore, the 
-parent directory contains meta data denoting the activities performed and the 
-features measured by the instrumentation.
-Within each sub-folder, the data are contained in multiple space-delimited text 
-files.  Extract each one into a variable.
-```{r Assign Testing Data}
-# Import Test Data
-testDataFile  <- "./UCI HAR Dataset/test/X_test.txt"                            #File of "test" data values
-testData  <- read.table(testDataFile)
-testAcFile <- "./UCI HAR Dataset/test/y_test.txt"                               #File of "test" activity values (walking, standing, etc)
-testActivity <- read.table(testAcFile) 
-testSuFile <- "./UCI HAR Dataset/test/subject_test.txt"                         #File of "test" subject values (the person who was subjected to the test)
-testSubject <- read.table(testSuFile)
-```
-```{r Assign Training Data}
-# Import Train Data
-trainDataFile <- "./UCI HAR Dataset/train/X_train.txt"                          #File of training data values
-trainData <- read.table(trainDataFile)
-trainAcFile <- "./UCI HAR Dataset/train/y_train.txt"                            #File of training activity values
-trainActivity <- read.table(trainAcFile)
-trainSuFile <- "./UCI HAR Dataset/train/subject_train.txt"                      #File of test subject values (the person who was subjected to the test)
-trainSubject <- read.table(trainSuFile)
-```
-```{r Assign Meta Data}
-# Import Features (Column Names)
-featuresFile <- "./UCI HAR Dataset/features.txt"                                #File of channel/feature names
-colNames <- read.table(featuresFile)
-colNames <- colNames[,2]                                                        #First column is just a numeric index = 1:nrow(colNames)
-colNames <- sub("BodyBody", "Body", colNames)                                   #Replace any variable names that repeat "Body" twice
+The following documents are contianed within this repo:
+    * run_analysis.R
+    * CodeBook.Rmd
+    * CodeBook.html
+    * README.rmd (this document)
 
-# Import Activity Labels
-activitiesFile <- "./UCI HAR Dataset/activity_labels.txt"                       #File of activity names
-acNames <- read.table(activitiesFile)
-```
-
-### Set the column names of the datasets (Assignment Item 4)
-The column names were imported in the features file.  See CodeBook.html for
-descriptions of each variable/feature, including the respective units.
-```{r}
-colnames(testData) <- colNames
-colnames(trainData) <- colNames
-colnames(testActivity) <- "ActivityID"
-colnames(trainActivity) <- "ActivityID"
-colnames(testSubject) <- "SubjectID"
-colnames(trainSubject) <- "SubjectID"
-```
-
-### Merge Data (Assignment Item 1)
-For both the testing and training datasets, combine the Activity ID, Subject ID,
-and test data values.  Then, merge the "test" and "train" rows together.
-```{r Combine Columns}
-# Combine ActivityID, SubjectID, and data values
-testData <- cbind(testActivity, testSubject, testData)
-trainData <- cbind(trainActivity, trainSubject, trainData)
-
-# Merge the Test and Train datasets 
-mergedData <- rbind(testData, trainData)
-```
-
-### Keep only the mean and standard deviation features (Assignment Item 2)
-Use a regular expression to find features which include "mean()" or "std()"
-```{r Select Features}
-mergedData <- mergedData[, grepl("mean\\(\\)|std\\(\\)|ActivityID|SubjectID",   #Keeps only columns who's name includes either "mean()", "std()", Activityy ID, or SubjectID
-    names(mergedData))]
-```
-
-### Make activity names descriptive (Assignment Item 3)
-The dataset at this point contains a numeric ID for the activity.  This ID 
-corresponds to a string in the acNames variable.  Index acNames to replace the 
-numeric ID's with meaningfull strings.
-```{r Convert Activity ID to Strings}
-mergedData$ActivityID <- acNames[mergedData$ActivityID, 2]                      #Indexes the activity id's dataset with the activity id from the test/train data
-```
-
-### Find Averages (Assignment Item 5)
-Average the values of each column for all combinations of ActivityID and 
-SubjectID
-```{r Get Averages, message=FALSE}
-library(dplyr)                                                                  #Load the dplyr library
-avgData <- mergedData %>%                                                       #Use string operators to group the data
-    group_by(ActivityID, SubjectID) %>%                                         # and then find the averages
-    summarize_all(mean)
-write.table(avgData, row.names=FALSE, "avgDataTable.txt")                       #Write the data to a text file
-
-```
-
-### Display Variable Descriptions
-Create a table with each variable number, name, and a description including units
-```{r, results="asis"}
-varNames <- names(mergedData)
-varNum <- 1:length(varNames)
-
-varDesc <- sub("^t", "Time-domain ", varNames)
-varDesc <- sub("^f", "Frequency-domaain (FFT) ", varDesc)
-
-varDesc <- sub("BodyAcc-", "acceleration of the subject's body, ", varDesc)
-varDesc <- sub("GravityAcc-", "acceleration due to gravity, ", varDesc)
-varDesc <- sub("BodyAccJerk-", "jerk of the subject's body, ", varDesc)
-varDesc <- sub("BodyGyro-", "angular rate of the subject's body, ", varDesc)
-varDesc <- sub("BodyGyroJerk", "angular acceleration of the subject's body, ", varDesc)
-varDesc <- sub("BodyAccMag-", "magnitude of the Euclidian vector sum of body acceleration X, Y, and Z components, ", varDesc)
-varDesc <- sub("GravityAccMag-", "magnitude of the Euclidian vector sum of gravity acceleration X, Y, and Z component, ", varDesc)
-varDesc <- sub("BodyAccJerkMag-", "magnitude of the Euclidian vector sum of body jerk X, Y, and Z components, ", varDesc)
-varDesc <- sub("BodyGyroMag-", "magnitude of the Euclidian vecotr sum of body angular rate X, Y, and Z components, ", varDesc)
-varDesc <- sub("BodyGyroJerkMag-", "magnitude of the Euclidian vecotr sum of body angular acceleration X, Y, and Z components, ", varDesc)
-
-varDesc <- sub("mean\\(\\)", "mean value estimation", varDesc)
-varDesc <- sub("std\\(\\)", "standard deviation estimation", varDesc)
-
-varDesc <- sub("-X$", ", X-axis", varDesc)
-varDesc <- sub("-Y$", ", Y-axis", varDesc)
-varDesc <- sub("-Z$", ", Z-axis", varDesc)
-
-varDesc[1] <- "Activity"
-varDesc[2] <- "Test subject identification number"
-
-cbdf <- data.frame(cbind(varNum, varNames, varDesc))
-names(cbdf) <- list("Column/Variable Number", "Variable Name", "Variable Description")
-
-library("xtable")
-tab <- xtable(cbdf)
-print.xtable(tab, type="html", include.rownames=FALSE)
-```
-
-
+###run_analysis.R
+This R script performs the analysis required by the assignment.  Running this script downloads additional files to the working directory that are necessary to carrying out the process of "Tidying" data.  Specifically, the script downloads a zip file (UCI HAR Dataset.zip) containing data obtained by measuring 30 subjects performing 6 activities while wearing a waiste-mounted Samsun Galexy II smart phone with embedded accelerometer and gyroscope sensors.  The data collection was conducted in two phases, "test" and "train".  The script unzips the folder and then imports data from several space-delimited text files:
+    * activity_labels.txt - A table of meaningful activity descriptions and their index which corresponds to values in other data files
+    * features.txt - A table of features, or measurements, that are contained in the data files.  Each feature has an index that corresponds to the column number of the data file
+    * features_info.txt - Details about each of the features and how they were calculated
+    * README.txt - Information about the conduct of the test and the creation of the test data.
+    * test directory
+    * train directory
+    
+The test and train directory both include the collected test data:
+    * subject_test - An array of subject ID's corresponding to each test subject for each row of data
+    * X_test.txt - A matrix of test data recorded by the sensors and processed by the test engineers.  Each column corresponds to a feature and each row an observation.
+    * Y-test.txt - An array of activity ID's corresponding to the indicies in the activity_labels.txt file
+    
+This R script then concatenates these separate datasets into a tidy dataset, adds meaningful variable names and activity ID strings, calculates the average of each feature grouped by activity and subject, and prints the results to a text file:
+    * avgDataTable.txt
+    
+###CodeBook.Rmd, CodeBook.html
+This R-Markdown file explains the process carried out by run_analysis.R in chunks.  Additionally, it prints a summary table of the variables contained in the tidy datasets to include variable descriptions and units.  This R Markdown file was knit and the resulting html document was also included in the repository.  The file should be viewed in an internet browser.
