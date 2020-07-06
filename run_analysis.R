@@ -1,4 +1,10 @@
 # Import Test Data
+fileLoc <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+dest <- "UCA HAR Dataset.zip"
+if(!file.exists(dest)) {
+    download.file(fileLoc, dest)
+    unzip(dest)
+}
 testDataFile  <- "./UCI HAR Dataset/test/X_test.txt"                            #File of test data values
 testData  <- read.table(testDataFile)
 testAcFile <- "./UCI HAR Dataset/test/y_test.txt"                               #File of test activity values (walking, standing, etc)
@@ -47,13 +53,10 @@ mergedData <- mergedData[, grepl("mean\\(\\)|std\\(\\)|ActivityID|SubjectID",   
 mergedData$ActivityID <- acNames[mergedData$ActivityID, 2]                      #Indexes the activity id's dataset with the activity id from the test/train data
 
 # Find the average of each variable for each activity and each subject (Assignment Item 5)
-avgData <- tapply(mergedData$`tBodyAcc-mean()-X`, list(mergedData$ActivityID,   #Use tapply to get the mean of each combination of activity and subject
-    mergedData$SubjectID), FUN=mean)                                    
-avgData <- as.data.frame(t(avgData))                                            #Convert to a data frame
-avgData$SubjectID <- rownames(avgData)                                          #Make the activity id a column
-avgData <- select(avgData, SubjectID, as.character(unique(mergedData$ActivityID)))   #Rearrange the columns
-print(avgData)
-
+avgData <- mergedData %>%
+    group_by(ActivityID, SubjectID) %>%
+    summarize_all(mean)
+write.table(avgData, row.names=FALSE, "avgDataTable.txt")
 
 
 

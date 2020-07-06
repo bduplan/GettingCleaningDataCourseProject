@@ -1,15 +1,44 @@
-## Import "Test" Data
-```{r}
-testDataFile  <- "./UCI HAR Dataset/test/X_test.txt"                            #File of test data values
-testData  <- read.table(testDataFile)
-testAcFile <- "./UCI HAR Dataset/test/y_test.txt"                               #File of test activity values (walking, standing, etc)
-testActivity <- read.table(testAcFile) 
-testSuFile <- "./UCI HAR Dataset/test/subject_test.txt"                         #File of test subject values (the person who was subjected to the test)
-testSubject <- read.table(testSuFile)
+---
+title: "README"
+author: "Bernard Duplan"
+date: "7/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Import "Train" Data
-```{r}
+### Import Test Data
+First, check to see if the data exists on the local machine.  If it does not, 
+import and unzip it.
+```{r Import}
+fileLoc <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+dest <- "UCA HAR Dataset.zip"
+if(!file.exists(dest)) {
+    download.file(fileLoc, dest)
+    unzip(dest)
+}
+```
+
+### Assign Datasets to Variables
+Data were taken in two phases, the training and testing phases, each contained
+within a respective subfolder within the data directory.  Furthermore, the 
+parent directory contains meta data denoting the activities performed and the 
+features measured by the instrumentation.
+Within each sub-folder, the data are contained in multiple space-delimited text 
+files.  Extract each one into a variable.
+```{r Assign Testing Data}
+# Import Test Data
+testDataFile  <- "./UCI HAR Dataset/test/X_test.txt"                            #File of "test" data values
+testData  <- read.table(testDataFile)
+testAcFile <- "./UCI HAR Dataset/test/y_test.txt"                               #File of "test" activity values (walking, standing, etc)
+testActivity <- read.table(testAcFile) 
+testSuFile <- "./UCI HAR Dataset/test/subject_test.txt"                         #File of "test" subject values (the person who was subjected to the test)
+testSubject <- read.table(testSuFile)
+```
+```{r Assign Training Data}
+# Import Train Data
 trainDataFile <- "./UCI HAR Dataset/train/X_train.txt"                          #File of training data values
 trainData <- read.table(trainDataFile)
 trainAcFile <- "./UCI HAR Dataset/train/y_train.txt"                            #File of training activity values
@@ -17,22 +46,21 @@ trainActivity <- read.table(trainAcFile)
 trainSuFile <- "./UCI HAR Dataset/train/subject_train.txt"                      #File of test subject values (the person who was subjected to the test)
 trainSubject <- read.table(trainSuFile)
 ```
-
-## Import Features (Column Names)
-```{r}
+```{r Assign Meta Data}
+# Import Features (Column Names)
 featuresFile <- "./UCI HAR Dataset/features.txt"                                #File of channel/feature names
-colNames <- read.table(featuresFile)                                            #Get the feature names for use as column/variable names
+colNames <- read.table(featuresFile)
 colNames <- colNames[,2]                                                        #First column is just a numeric index = 1:nrow(colNames)
 colNames <- sub("BodyBody", "Body", colNames)                                   #Replace any variable names that repeat "Body" twice
-```
 
-## Import Activity Labels
-```{r}
+# Import Activity Labels
 activitiesFile <- "./UCI HAR Dataset/activity_labels.txt"                       #File of activity names
 acNames <- read.table(activitiesFile)
 ```
 
-## Set the column names of the datasets
+### Set the column names of the datasets (Assignment Item 4)
+The column names were imported in the features file.  See CodeBook.html for
+descriptions of each variable/feature, including the respective units.
 ```{r}
 colnames(testData) <- colNames
 colnames(trainData) <- colNames
@@ -42,43 +70,44 @@ colnames(testSubject) <- "SubjectID"
 colnames(trainSubject) <- "SubjectID"
 ```
 
-## Add the Activity ID and Subject ID to the datasets
-```{r}
+### Merge Data (Assignment Item 1)
+For both the testing and training datasets, combine the Activity ID, Subject ID,
+and test data values.  Then, merge the "test" and "train" rows together.
+```{r Combine Columns}
+# Combine ActivityID, SubjectID, and data values
 testData <- cbind(testActivity, testSubject, testData)
 trainData <- cbind(trainActivity, trainSubject, trainData)
-```
 
-## Merge the Test and Train datasets (Assignment Item 1)
-```{r}
+# Merge the Test and Train datasets 
 mergedData <- rbind(testData, trainData)
 ```
 
-## Keep only the mean and standard deviation features (Assignment Item 2)
-```{r}
+### Keep only the mean and standard deviation features (Assignment Item 2)
+Use a regular expression to find features which include "mean()" or "std()"
+```{r Select Features}
 mergedData <- mergedData[, grepl("mean\\(\\)|std\\(\\)|ActivityID|SubjectID",   #Keeps only columns who's name includes either "mean()", "std()", Activityy ID, or SubjectID
-    names(mergedData))]                   
+    names(mergedData))]
 ```
 
-## Make activity names descriptive (Assignment Item 3)
-```{r}
+### Make activity names descriptive (Assignment Item 3)
+The dataset at this point contains a numeric ID for the activity.  This ID 
+corresponds to a string in the acNames variable.  Index acNames to replace the 
+numeric ID's with meaningfull strings.
+```{r Convert Activity ID to Strings}
 mergedData$ActivityID <- acNames[mergedData$ActivityID, 2]                      #Indexes the activity id's dataset with the activity id from the test/train data
 ```
 
-## Find the average of each variable for each activity and each subject (Assignment Item 5)
-```{r echo=T, results='hide'}
-library(dplyr)
-```
-```{r}
-options(width = 90)
-avgData <- tapply(mergedData$`tBodyAcc-mean()-X`, list(mergedData$ActivityID,   #Use tapply to get the mean of each combination of activity and subject
-    mergedData$SubjectID), FUN=mean)                                    
-avgData <- as.data.frame(t(avgData))                                            #Convert to a data frame
-avgData$SubjectID <- rownames(avgData)                                          #Make the activity id a column
-avgData <- select(avgData, SubjectID, as.character(unique(mergedData$ActivityID)))   #Rearrange the columns
-print(avgData)
-```
+### Find Averages (Assignment Item 5)
+Average the values of each column for all combinations of ActivityID and 
+SubjectID
+```{r Get Averages, message=FALSE}
+library(dplyr)                                                                  #Load the dplyr library
+avgData <- mergedData %>%                                                       #Use string operators to group the data
+    group_by(ActivityID, SubjectID) %>%                                         # and then find the averages
+    summarize_all(mean)
+write.table(avgData, row.names=FALSE, "avgDataTable.txt")                       #Write the data to a text file
 
-
+```
 
 
 
