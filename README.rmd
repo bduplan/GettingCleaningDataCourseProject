@@ -6,7 +6,6 @@ output: html_document
 ---
 
 ##GettingCleaningDataCourseProject Repository ReadMe
-assignment.
 
 The following documents are contianed within this repo:
     * run_analysis.R
